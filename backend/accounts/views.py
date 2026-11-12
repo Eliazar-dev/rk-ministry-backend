@@ -22,7 +22,13 @@ User = get_user_model()
 
 
 def user_data(user):
-    return {'id': user.id, 'name': user.display_name, 'email': user.email, 'is_staff': user.is_staff}
+    return {
+        'id': user.id,
+        'name': user.display_name,
+        'email': user.email,
+        'is_staff': user.is_staff,
+        'profile_picture': user.profile_picture or ''
+    }
 
 
 def issue(user, created=False):

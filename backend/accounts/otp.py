@@ -35,12 +35,18 @@ def issue_code(email, purpose, name='', password_hash=''):
 
 def send_code(email, code, purpose, name=''):
     greeting = f'Hello {name},' if name else 'Hello,'
-    action = 'finish creating your account' if purpose == EmailOTP.SIGNUP else 'sign in'
+    action = 'complete your registration' if purpose == EmailOTP.SIGNUP else 'sign in to your account'
+    site_name = getattr(settings, 'SITE_NAME', 'Richard Kwanya Snr Ministry')
     send_mail(
-        f'{code} is your {settings.SITE_NAME} code',
-        f'{greeting}\n\nYour verification code to {action} is:\n\n    {code}\n\n'
-        'It expires in 10 minutes. If you did not request it, you can ignore this email.\n\n'
-        'Richard Kwanya Snr #Babawa\n',
+        f'Your verification code for {site_name}',
+        f'{greeting}\n\n'
+        f'Thank you for choosing {site_name}. Your verification code to {action} is:\n\n'
+        f'    {code}\n\n'
+        f'This code will expire in 10 minutes for your security.\n\n'
+        f'If you did not request this code, please disregard this email. Your account remains safe.\n\n'
+        f'Blessings,\n'
+        f'{site_name}\n'
+        f'Richard Kwanya Snr #Babawa\n',
         settings.DEFAULT_FROM_EMAIL,
         [email],
         fail_silently=False,
