@@ -144,7 +144,11 @@ class GoogleLoginView(Public):
         user = User.objects.filter(email__iexact=email).first()
         created = user is None
         if created:
-            user = User(email=email, first_name=(info.get('name') or email.split('@')[0])[:120])
+            user = User(
+                email=email,
+                first_name=(info.get('name') or email.split('@')[0])[:120],
+                profile_picture=info.get('picture') or ''
+            )
             user.set_unusable_password()
             user.save()
         elif not user.is_active:
