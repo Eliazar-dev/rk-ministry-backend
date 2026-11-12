@@ -7,8 +7,6 @@ serializers (no long text bodies); the edit form loads the full record.
 import time
 from datetime import timedelta
 
-import cloudinary
-from cloudinary.utils import api_sign_request
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -30,6 +28,14 @@ from shop.models import Donation, Order, Payment, Product
 
 from . import serializers as s
 from .permissions import IsStaff
+
+# Import Cloudinary only when needed to avoid import errors if CLOUDINARY_URL is not set
+try:
+    import cloudinary
+    from cloudinary.utils import api_sign_request
+    CLOUDINARY_AVAILABLE = True
+except Exception:
+    CLOUDINARY_AVAILABLE = False
 
 
 class Pager(PageNumberPagination):
@@ -250,6 +256,8 @@ class UploadSign(APIView):
     permission_classes = [IsStaff]
 
     def post(self, request):
+        if not CLOUDINARY_AVAILABLE:
+            return Response({'detail': 'Cloudinary is not set up on the server (CLOUDINARY_URL).'}, status=503)
         cfg = cloudinary.config()
         if not (cfg.cloud_name and cfg.api_key and cfg.api_secret):
             return Response({'detail': 'Cloudinary is not set up on the server (CLOUDINARY_URL).'}, status=503)
