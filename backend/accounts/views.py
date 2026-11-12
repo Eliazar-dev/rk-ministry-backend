@@ -89,7 +89,9 @@ class VerifySignupView(Public):
         if User.objects.filter(email__iexact=email).exists():
             record.delete()
             return Response({'detail': 'An account with this email already exists. Please log in.'}, status=400)
-        user = User.objects.create(email=email, first_name=record.name, password=record.password_hash)
+        user = User.objects.create(email=email, first_name=record.name)
+        user.password = record.password_hash
+        user.save()
         record.delete()
         return Response(issue(user, created=True), status=status.HTTP_201_CREATED)
 
