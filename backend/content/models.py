@@ -31,7 +31,10 @@ class Cover(Base):
 
     @property
     def cover_src(self):
-        return media_url(self.cover) or self.cover_url
+        try:
+            return media_url(self.cover) or self.cover_url
+        except Exception:
+            return self.cover_url or ''
 
 
 def video_poster(url):

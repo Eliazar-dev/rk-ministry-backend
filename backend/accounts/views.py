@@ -131,12 +131,13 @@ class GoogleLoginView(Public):
     def post(self, request):
         if not settings.GOOGLE_CLIENT_ID:
             return Response({'detail': 'Google sign-in is not configured yet.'}, status=503)
+        credential = request.data.get('credential') or ''
+        if not credential:
+            return Response({'detail': 'Google credential is required.'}, status=400)
         try:
-            info = id_token.verify_oauth2_token(
-                request.data.get('credential') or '', g_requests.Request(), settings.GOOGLE_CLIENT_ID
-            )
-        except Exception:
-            return Response({'detail': 'Google sign-in failed. Please try again.'}, status=401)
+            info = id_token.verify_oauth2_token(credential, g_requests.Request(), settings.GOOGLE_CLIENT_ID)
+        except Exception as e:
+            return Response({'detail': f'Google sign-in failed: {str(e)}'}, status=401)
         email = (info.get('email') or '').lower()
         if not email or not info.get('email_verified'):
             return Response({'detail': 'Your Google email is not verified.'}, status=401)

@@ -46,6 +46,12 @@ class GalleryList(PublicMixin, ListAPIView):
     serializer_class = s.AlbumSerializer
     queryset = Album.objects.filter(published=True)
 
+    def get(self, request, *args, **kwargs):
+        try:
+            return super().get(request, *args, **kwargs)
+        except Exception as e:
+            return Response({'detail': f'Error loading gallery: {str(e)}'}, status=500)
+
 
 class AboutView(PublicMixin, APIView):
     def get(self, request):
