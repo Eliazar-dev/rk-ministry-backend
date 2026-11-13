@@ -180,23 +180,15 @@ class PastorView(APIView):
     permission_classes = [IsStaff]
 
     def get(self, request):
-        try:
-            p = PastorProfile.objects.first()
-            return Response(s.Pastor(p).data if p else {})
-        except Exception as e:
-            import traceback
-            return Response({'detail': f'Pastor error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
+        p = PastorProfile.objects.first()
+        return Response(s.Pastor(p).data if p else {})
 
     def put(self, request):
-        try:
-            p = PastorProfile.objects.first()
-            ser = s.Pastor(p, data=request.data, partial=True)
-            ser.is_valid(raise_exception=True)
-            ser.save()
-            return Response(ser.data)
-        except Exception as e:
-            import traceback
-            return Response({'detail': f'Pastor error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
+        p = PastorProfile.objects.first()
+        ser = s.Pastor(p, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
 
     patch = put
 
