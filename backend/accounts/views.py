@@ -10,7 +10,7 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from google.auth.transport import requests as g_requests
 from google.oauth2 import id_token
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -204,5 +204,14 @@ class ResetPasswordView(Public):
 
 
 class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         return Response(user_data(request.user))
+
+    def patch(self, request):
+        user = request.user
+        if 'profile_picture' in request.data:
+            user.profile_picture = request.data['profile_picture']
+            user.save()
+        return Response(user_data(user))
