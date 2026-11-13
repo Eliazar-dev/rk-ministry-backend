@@ -8,6 +8,5 @@
   ],
   "routes": [{ "src": "/(.*)", "dest": "/" }],
   "installCommand": "pip install -r requirements.txt",
-  "buildCommand": "python manage.py migrate",
   "version": 2
 }
