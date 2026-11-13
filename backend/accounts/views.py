@@ -82,22 +82,18 @@ class VerifySignupView(Public):
     """Step 2. Right code → the account is created and the person is signed in."""
 
     def post(self, request):
-        try:
-            email = _email(request)
-            record, error = otp.check_code(email, EmailOTP.SIGNUP, request.data.get('code'))
-            if error:
-                return Response({'detail': error}, status=400)
-            if User.objects.filter(email__iexact=email).exists():
-                record.delete()
-                return Response({'detail': 'An account with this email already exists. Please log in.'}, status=400)
-            user = User.objects.create(email=email, first_name=record.name)
-            user.password = record.password_hash
-            user.save()
+        email = _email(request)
+        record, error = otp.check_code(email, EmailOTP.SIGNUP, request.data.get('code'))
+        if error:
+            return Response({'detail': error}, status=400)
+        if User.objects.filter(email__iexact=email).exists():
             record.delete()
-            return Response(issue(user, created=True), status=status.HTTP_201_CREATED)
-        except Exception as e:
-            import traceback
-            return Response({'detail': f'Verification error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
+            return Response({'detail': 'An account with this email already exists. Please log in.'}, status=400)
+        user = User.objects.create(email=email, first_name=record.name)
+        user.password = record.password_hash
+        user.save()
+        record.delete()
+        return Response(issue(user, created=True), status=status.HTTP_201_CREATED)
 
 
 # ---------------- Log in ----------------
