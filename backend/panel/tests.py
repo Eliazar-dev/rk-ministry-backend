@@ -25,12 +25,45 @@ class PanelBase(APITestCase):
 
 class AccessTests(PanelBase):
     def test_anonymous_and_members_are_refused(self):
-        for path in ('/stats/', '/sermons/', '/orders/', '/members/', '/pastor/'):
-            self.assertEqual(self.client.get(BASE + path).status_code, 401, path)
+        """Test all admin endpoints return 401 for anonymous and 403 for non-staff."""
+        # GET-only endpoints
+        get_only = ['/stats/', '/pastor/']
+        # CRUD endpoints
+        crud = ['/hero/', '/sermons/', '/lessons/', '/devotionals/', '/articles/', '/albums/', '/products/']
+        # Read-only endpoints
+        read_only = ['/orders/', '/donations/', '/members/', '/prayers/', '/messages/', '/comments/']
+        # POST-only
+        post_only = ['/upload-sign/']
+
+        all_endpoints = get_only + crud + read_only + post_only
+
+        # Anonymous: 401 for all methods
+        for path in all_endpoints:
+            self.assertEqual(self.client.get(BASE + path).status_code, 401, f'GET {path} should be 401 for anonymous')
+        for path in crud + post_only:
+            self.assertEqual(self.client.post(BASE + path, {}).status_code, 401, f'POST {path} should be 401 for anonymous')
+        for path in crud:
+            self.assertEqual(self.client.patch(BASE + path + '1/', {}).status_code, 401, f'PATCH {path} should be 401 for anonymous')
+            self.assertEqual(self.client.delete(BASE + path + '1/').status_code, 401, f'DELETE {path} should be 401 for anonymous')
+
+        # Non-staff member: 403 for all methods
         self.as_member()
-        for path in ('/stats/', '/sermons/', '/orders/', '/members/', '/pastor/'):
-            self.assertEqual(self.client.get(BASE + path).status_code, 403, path)
-        self.assertEqual(self.client.post(BASE + '/upload-sign/', {}).status_code, 403)
+        for path in all_endpoints:
+            self.assertEqual(self.client.get(BASE + path).status_code, 403, f'GET {path} should be 403 for non-staff')
+        for path in crud + post_only:
+            self.assertEqual(self.client.post(BASE + path, {}).status_code, 403, f'POST {path} should be 403 for non-staff')
+        for path in crud:
+            self.assertEqual(self.client.patch(BASE + path + '1/', {}).status_code, 403, f'PATCH {path} should be 403 for non-staff')
+            self.assertEqual(self.client.delete(BASE + path + '1/').status_code, 403, f'DELETE {path} should be 403 for non-staff')
+
+        # Staff: 200 for GET (except POST-only endpoints), 201/200 for POST/PATCH
+        self.as_staff()
+        for path in get_only + crud + read_only:
+            res = self.client.get(BASE + path)
+            self.assertIn(res.status_code, [200, 404], f'GET {path} should be 200 or 404 for staff')
+        # POST-only endpoint
+        res = self.client.post(BASE + '/upload-sign/', {})
+        self.assertEqual(res.status_code, 503, 'POST /upload-sign/ should be 503 (Cloudinary not configured)')
 
     def test_login_payload_tells_the_site_who_is_staff(self):
         res = self.client.post('/api/auth/login/', {'email': 'boss@example.com', 'password': 'pw123456'}, format='json')

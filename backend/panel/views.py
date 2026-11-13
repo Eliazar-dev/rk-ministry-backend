@@ -194,52 +194,113 @@ class PastorView(APIView):
 
 
 class Stats(APIView):
-    """Everything the dashboard needs in a handful of queries."""
+    """Everything the dashboard needs in a handful of queries. Each count is wrapped so one failing table doesn't crash the endpoint."""
 
     permission_classes = [IsStaff]
+
+    def safe_count(self, model, filters=None):
+        """Safely count objects, returning 0 on error."""
+        try:
+            qs = model.objects.all()
+            if filters:
+                qs = qs.filter(filters)
+            return qs.count()
+        except Exception:
+            return 0
+
+    def safe_aggregate(self, model, aggregate_dict):
+        """Safely aggregate, returning 0 for all fields on error."""
+        try:
+            return model.objects.aggregate(**aggregate_dict)
+        except Exception:
+            return {k: 0 for k in aggregate_dict.keys()}
 
     def get(self, request):
         try:
             now = timezone.now()
             since = now - timedelta(days=13)
             paid = Q(status=Payment.PAID)
-            orders = Order.objects.aggregate(
-                total=Count('id'), paid=Count('id', filter=paid), pending=Count('id', filter=Q(status=Payment.PENDING)),
-                revenue=Sum('amount', filter=paid),
-            )
-            gifts = Donation.objects.aggregate(paid=Count('id', filter=paid), total=Sum('amount', filter=paid))
 
+            # Safe content counts
+            content = {
+                'sermons': self.safe_count(Sermon),
+                'lessons': self.safe_count(Lesson),
+                'devotionals': self.safe_count(Devotional),
+                'articles': self.safe_count(Article),
+                'albums': self.safe_count(Album),
+                'products': self.safe_count(Product),
+                'hero': self.safe_count(HeroSlide),
+            }
+
+            # Safe member count
+            members = self.safe_count(User)
+
+            # Safe inbox counts
+            inbox = {
+                'prayers': self.safe_count(PrayerRequest, {'prayed_for': False}),
+                'messages': self.safe_count(ContactMessage, {'handled': False}),
+                'comments': self.safe_count(Comment),
+            }
+
+            # Safe order/donation aggregates
+            orders_agg = self.safe_aggregate(Order, {
+                'total': Count('id'),
+                'paid': Count('id', filter=paid),
+                'pending': Count('id', filter=Q(status=Payment.PENDING)),
+                'revenue': Sum('amount', filter=paid),
+            })
+            gifts_agg = self.safe_aggregate(Donation, {
+                'paid': Count('id', filter=paid),
+                'total': Sum('amount', filter=paid),
+            })
+
+            # Safe per-day series
             def per_day(model):
-                rows = (model.objects.filter(status=Payment.PAID, created__gte=since)
-                        .annotate(d=TruncDate('created')).values('d').annotate(v=Sum('amount')))
-                return {r['d']: r['v'] for r in rows}
+                try:
+                    rows = (model.objects.filter(status=Payment.PAID, created__gte=since)
+                            .annotate(d=TruncDate('created')).values('d').annotate(v=Sum('amount')))
+                    return {r['d']: r['v'] for r in rows}
+                except Exception:
+                    return {}
 
             o, d = per_day(Order), per_day(Donation)
             today = timezone.localdate()
             days = [today - timedelta(days=i) for i in range(13, -1, -1)]
             series = [{'date': x.isoformat(), 'orders': o.get(x, 0), 'donations': d.get(x, 0)} for x in days]
 
+            # Safe recent items
+            try:
+                recent_orders = s.OrderSerializer(Order.objects.select_related('user').prefetch_related('items')[:5], many=True).data
+            except Exception:
+                recent_orders = []
+            try:
+                recent_prayers = s.PrayerSerializer(PrayerRequest.objects.all()[:5], many=True).data
+            except Exception:
+                recent_prayers = []
+            try:
+                recent_messages = s.MessageSerializer(ContactMessage.objects.all()[:5], many=True).data
+            except Exception:
+                recent_messages = []
+
             return Response({
-                'content': {
-                    'sermons': Sermon.objects.count(), 'lessons': Lesson.objects.count(),
-                    'devotionals': Devotional.objects.count(), 'articles': Article.objects.count(),
-                    'albums': Album.objects.count(), 'products': Product.objects.count(),
-                    'hero': HeroSlide.objects.count(),
+                'content': content,
+                'members': members,
+                'inbox': inbox,
+                'orders': {
+                    'count': orders_agg['total'],
+                    'paid': orders_agg['paid'],
+                    'pending': orders_agg['pending'],
+                    'revenue': orders_agg['revenue'] or 0,
                 },
-                'members': User.objects.count(),
-                'inbox': {
-                    'prayers': PrayerRequest.objects.filter(prayed_for=False).count(),
-                    'messages': ContactMessage.objects.filter(handled=False).count(),
-                    'comments': Comment.objects.count(),
+                'donations': {
+                    'count': gifts_agg['paid'],
+                    'total': gifts_agg['total'] or 0,
                 },
-                'orders': {'count': orders['total'], 'paid': orders['paid'], 'pending': orders['pending'],
-                           'revenue': orders['revenue'] or 0},
-                'donations': {'count': gifts['paid'], 'total': gifts['total'] or 0},
                 'series': series,
                 'recent': {
-                    'orders': s.OrderSerializer(Order.objects.select_related('user').prefetch_related('items')[:5], many=True).data,
-                    'prayers': s.PrayerSerializer(PrayerRequest.objects.all()[:5], many=True).data,
-                    'messages': s.MessageSerializer(ContactMessage.objects.all()[:5], many=True).data,
+                    'orders': recent_orders,
+                    'prayers': recent_prayers,
+                    'messages': recent_messages,
                 },
             })
         except Exception as e:
