@@ -117,7 +117,7 @@ class GoogleTests(TestCase):
         first = self.c.post('/api/auth/google/', {'credential': 'tok'}, format='json')
         self.assertEqual(first.status_code, 200)
         self.assertTrue(first.data['created'])
-        self.assertEqual(first.data['user'], {'id': first.data['user']['id'], 'name': 'Grace Wanjiru', 'email': 'grace@gmail.com', 'is_staff': False})
+        self.assertEqual(first.data['user'], {'id': first.data['user']['id'], 'name': 'Grace Wanjiru', 'email': 'grace@gmail.com', 'is_staff': False, 'profile_picture': ''})
         self.assertFalse(User.objects.get().has_usable_password())
         second = self.c.post('/api/auth/google/', {'credential': 'tok'}, format='json')
         self.assertFalse(second.data['created'])
