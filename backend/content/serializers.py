@@ -73,7 +73,9 @@ class LessonSerializer(Gated):
         return like_count('lesson', obj.pk)
 
     def get_hasPdf(self, obj):
-        return bool(obj.pdf_src)
+        request = self.context.get('request')
+        authed = bool(request and request.user and request.user.is_authenticated)
+        return authed and bool(obj.pdf_src)
 
 
 class DevotionalSerializer(Gated):
@@ -100,7 +102,9 @@ class ArticleSerializer(Gated):
         fields = ('id', 'title', 'author', 'date', 'category', 'excerpt', 'body', 'cover', 'pdf', 'hasPdf')
 
     def get_hasPdf(self, obj):
-        return bool(obj.pdf_src)
+        request = self.context.get('request')
+        authed = bool(request and request.user and request.user.is_authenticated)
+        return authed and bool(obj.pdf_src)
 
 
 class AlbumSerializer(Gated):

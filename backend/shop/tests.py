@@ -37,7 +37,7 @@ class ApiFlowTests(TestCase):
             self.assertTrue(r.data[0]['locked'], url)
             for f in fields:
                 self.assertNotIn(f, r.data[0], f'{url} leaked {f}')
-        self.assertTrue(self.c.get('/api/lessons/').data[0]['hasPdf'])
+        self.assertFalse(self.c.get('/api/lessons/').data[0]['hasPdf'])  # hasPdf is false for anonymous users
         for url in ['/api/hero/', '/api/products/', '/api/about/']:
             self.assertEqual(self.c.get(url).status_code, 200, url)
         self.signup()
@@ -47,6 +47,7 @@ class ApiFlowTests(TestCase):
             for f in fields:
                 self.assertIn(f, r.data[0], url)
         self.assertEqual(self.c.get('/api/gallery/').data[0]['link'], 'https://pixieset.example/album')
+        self.assertTrue(self.c.get('/api/lessons/').data[0]['hasPdf'])  # hasPdf is true for authenticated users
 
     def test_member_actions_still_need_an_account(self):
         for method, url in [('post', '/api/orders/'), ('post', '/api/donations/'), ('get', '/api/auth/me/'),
