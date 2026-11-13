@@ -199,48 +199,52 @@ class Stats(APIView):
     permission_classes = [IsStaff]
 
     def get(self, request):
-        now = timezone.now()
-        since = now - timedelta(days=13)
-        paid = Q(status=Payment.PAID)
-        orders = Order.objects.aggregate(
-            total=Count('id'), paid=Count('id', filter=paid), pending=Count('id', filter=Q(status=Payment.PENDING)),
-            revenue=Sum('amount', filter=paid),
-        )
-        gifts = Donation.objects.aggregate(paid=Count('id', filter=paid), total=Sum('amount', filter=paid))
+        try:
+            now = timezone.now()
+            since = now - timedelta(days=13)
+            paid = Q(status=Payment.PAID)
+            orders = Order.objects.aggregate(
+                total=Count('id'), paid=Count('id', filter=paid), pending=Count('id', filter=Q(status=Payment.PENDING)),
+                revenue=Sum('amount', filter=paid),
+            )
+            gifts = Donation.objects.aggregate(paid=Count('id', filter=paid), total=Sum('amount', filter=paid))
 
-        def per_day(model):
-            rows = (model.objects.filter(status=Payment.PAID, created__gte=since)
-                    .annotate(d=TruncDate('created')).values('d').annotate(v=Sum('amount')))
-            return {r['d']: r['v'] for r in rows}
+            def per_day(model):
+                rows = (model.objects.filter(status=Payment.PAID, created__gte=since)
+                        .annotate(d=TruncDate('created')).values('d').annotate(v=Sum('amount')))
+                return {r['d']: r['v'] for r in rows}
 
-        o, d = per_day(Order), per_day(Donation)
-        today = timezone.localdate()
-        days = [today - timedelta(days=i) for i in range(13, -1, -1)]
-        series = [{'date': x.isoformat(), 'orders': o.get(x, 0), 'donations': d.get(x, 0)} for x in days]
+            o, d = per_day(Order), per_day(Donation)
+            today = timezone.localdate()
+            days = [today - timedelta(days=i) for i in range(13, -1, -1)]
+            series = [{'date': x.isoformat(), 'orders': o.get(x, 0), 'donations': d.get(x, 0)} for x in days]
 
-        return Response({
-            'content': {
-                'sermons': Sermon.objects.count(), 'lessons': Lesson.objects.count(),
-                'devotionals': Devotional.objects.count(), 'articles': Article.objects.count(),
-                'albums': Album.objects.count(), 'products': Product.objects.count(),
-                'hero': HeroSlide.objects.count(),
-            },
-            'members': User.objects.count(),
-            'inbox': {
-                'prayers': PrayerRequest.objects.filter(prayed_for=False).count(),
-                'messages': ContactMessage.objects.filter(handled=False).count(),
-                'comments': Comment.objects.count(),
-            },
-            'orders': {'count': orders['total'], 'paid': orders['paid'], 'pending': orders['pending'],
-                       'revenue': orders['revenue'] or 0},
-            'donations': {'count': gifts['paid'], 'total': gifts['total'] or 0},
-            'series': series,
-            'recent': {
-                'orders': s.OrderSerializer(Order.objects.select_related('user').prefetch_related('items')[:5], many=True).data,
-                'prayers': s.PrayerSerializer(PrayerRequest.objects.all()[:5], many=True).data,
-                'messages': s.MessageSerializer(ContactMessage.objects.all()[:5], many=True).data,
-            },
-        })
+            return Response({
+                'content': {
+                    'sermons': Sermon.objects.count(), 'lessons': Lesson.objects.count(),
+                    'devotionals': Devotional.objects.count(), 'articles': Article.objects.count(),
+                    'albums': Album.objects.count(), 'products': Product.objects.count(),
+                    'hero': HeroSlide.objects.count(),
+                },
+                'members': User.objects.count(),
+                'inbox': {
+                    'prayers': PrayerRequest.objects.filter(prayed_for=False).count(),
+                    'messages': ContactMessage.objects.filter(handled=False).count(),
+                    'comments': Comment.objects.count(),
+                },
+                'orders': {'count': orders['total'], 'paid': orders['paid'], 'pending': orders['pending'],
+                           'revenue': orders['revenue'] or 0},
+                'donations': {'count': gifts['paid'], 'total': gifts['total'] or 0},
+                'series': series,
+                'recent': {
+                    'orders': s.OrderSerializer(Order.objects.select_related('user').prefetch_related('items')[:5], many=True).data,
+                    'prayers': s.PrayerSerializer(PrayerRequest.objects.all()[:5], many=True).data,
+                    'messages': s.MessageSerializer(ContactMessage.objects.all()[:5], many=True).data,
+                },
+            })
+        except Exception as e:
+            import traceback
+            return Response({'detail': f'Stats error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
 
 
 # ---------- direct-to-Cloudinary uploads ----------
