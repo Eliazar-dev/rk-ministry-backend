@@ -8,8 +8,8 @@ from rest_framework import serializers
 
 from accounts.models import User
 from content.models import (
-    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, PastorProfile,
-    PrayerRequest, Sermon,
+    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, LiveStream,
+    PastorProfile, PrayerRequest, Sermon,
 )
 from shop.models import Donation, Order, OrderItem, Product
 
@@ -51,6 +51,7 @@ def make(model, light=()):
 
 
 Hero, HeroList = make(HeroSlide)
+Live_, LiveList = make(LiveStream)
 Sermon_, SermonList = make(Sermon, light=('description',))
 Lesson_, LessonList = make(Lesson, light=('description',))
 Devotional_, DevotionalList = make(Devotional, light=('body',))

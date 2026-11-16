@@ -5,6 +5,7 @@ from . import views as v
 
 router = SimpleRouter()
 router.register('hero', v.HeroView, basename='panel-hero')
+router.register('live', v.LiveView, basename='panel-live')
 router.register('sermons', v.SermonView, basename='panel-sermons')
 router.register('lessons', v.LessonView, basename='panel-lessons')
 router.register('devotionals', v.DevotionalView, basename='panel-devotionals')

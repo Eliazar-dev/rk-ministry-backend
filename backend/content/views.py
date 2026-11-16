@@ -1,4 +1,6 @@
+from django.db.models import Q
 from django.http import Http404
+from django.utils import timezone
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -9,7 +11,7 @@ from accounts.auth import OptionalJWT
 
 from . import serializers as s
 from .models import (
-    Album, Article, Comment, Devotional, HeroSlide, Lesson, Like, PastorProfile, Sermon,
+    Album, Article, Comment, Devotional, HeroSlide, Lesson, Like, LiveStream, PastorProfile, Sermon,
 )
 
 KINDS = {'sermon': Sermon, 'lesson': Lesson, 'devotional': Devotional}
@@ -51,6 +53,25 @@ class GalleryList(PublicMixin, ListAPIView):
             return super().get(request, *args, **kwargs)
         except Exception as e:
             return Response({'detail': f'Error loading gallery: {str(e)}'}, status=500)
+
+
+class LiveNow(PublicMixin, APIView):
+    """The stream to show right now: whatever is live, else the next scheduled one, else null."""
+
+    def get(self, request):
+        now = timezone.now()
+        live = (LiveStream.objects
+                .filter(is_live=True)
+                .filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+                .order_by('-scheduled_at', '-id')
+                .first())
+        obj = live or (LiveStream.objects
+                       .filter(is_live=False, scheduled_at__gte=now)
+                       .order_by('scheduled_at', 'id')
+                       .first())
+        if not obj:
+            return Response(None)
+        return Response(s.LiveSerializer(obj, context={'request': request}).data)
 
 
 class AboutView(PublicMixin, APIView):

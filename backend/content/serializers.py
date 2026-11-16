@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from .models import (
     Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, Like,
-    PastorProfile, PrayerRequest, Sermon,
+    LiveStream, PastorProfile, PrayerRequest, Sermon,
 )
 
 
@@ -136,6 +136,24 @@ class AlbumSerializer(Gated):
 
     def get_year(self, obj):
         return obj.date.year
+
+
+class LiveSerializer(Gated):
+    """Only the YouTube link is gated — everyone can see that a service is live/scheduled."""
+
+    locked_fields = ('youtube',)
+    youtube = serializers.CharField(source='youtube_url')
+    scheduledAt = serializers.DateTimeField(source='scheduled_at')
+    endsAt = serializers.DateTimeField(source='ends_at')
+    isLive = serializers.BooleanField(source='is_live')
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LiveStream
+        fields = ('id', 'title', 'description', 'youtube', 'scheduledAt', 'endsAt', 'isLive', 'status')
+
+    def get_status(self, obj):
+        return 'live' if obj.is_live else 'scheduled'
 
 
 class PastorSerializer(serializers.ModelSerializer):

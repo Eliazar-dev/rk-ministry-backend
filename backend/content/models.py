@@ -257,6 +257,23 @@ class PastorProfile(models.Model):
         return self.name
 
 
+# ---------------- Live stream ----------------
+class LiveStream(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    youtube_url = models.URLField('YouTube link', help_text='Paste the YouTube watch/share/live link.')
+    scheduled_at = models.DateTimeField(help_text='When the service is planned to start.')
+    is_live = models.BooleanField(default=False)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-scheduled_at', '-id']
+
+    def __str__(self):
+        return self.title
+
+
 # ---------------- Forms from the site ----------------
 class PrayerRequest(models.Model):
     name = models.CharField(max_length=120)

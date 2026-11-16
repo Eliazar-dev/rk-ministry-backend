@@ -1,6 +1,7 @@
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
-from content.models import Lesson, LessonPage
+from content.models import Lesson, LessonPage, LiveStream
 from accounts.models import User
 
 
@@ -167,3 +168,48 @@ class LessonPagesStaffTests(TestCase):
         # Pages from the other lesson must not appear
         other_ids = set(LessonPage.objects.exclude(lesson=self.lesson).values_list('id', flat=True))
         self.assertFalse(set(page_ids) & other_ids)
+
+
+class LiveStreamStaffTests(TestCase):
+    """Staff CRUD on /api/manage/live/."""
+
+    def setUp(self):
+        LiveStream.objects.all().delete()
+        self.client = APIClient()
+        self.staff_user = User.objects.create_user(
+            email='staff@example.com', first_name='Staff', password='testpass123', is_staff=True,
+        )
+        self.regular_user = User.objects.create_user(
+            email='regular@example.com', first_name='Regular', password='testpass123', is_staff=False,
+        )
+
+    def test_anon_gets_401_nonstaff_gets_403(self):
+        self.assertEqual(self.client.get('/api/manage/live/').status_code, 401)
+        self.client.force_authenticate(user=self.regular_user)
+        self.assertEqual(self.client.get('/api/manage/live/').status_code, 403)
+
+    def test_staff_crud_and_go_live(self):
+        self.client.force_authenticate(user=self.staff_user)
+        future = (timezone.now() + timezone.timedelta(hours=3)).isoformat()
+        res = self.client.post('/api/manage/live/', {
+            'title': 'Sabbath Service',
+            'youtube_url': 'https://youtube.com/watch?v=abc12345678',
+            'scheduled_at': future,
+            'description': 'Join us live',
+        })
+        self.assertEqual(res.status_code, 201)
+        sid = res.data['id']
+
+        # Go live
+        res = self.client.patch(f'/api/manage/live/{sid}/', {'is_live': True, 'ends_at': None}, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(LiveStream.objects.get(pk=sid).is_live)
+
+        # End live
+        res = self.client.patch(f'/api/manage/live/{sid}/', {'is_live': False})
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(LiveStream.objects.get(pk=sid).is_live)
+
+        # List + delete
+        self.assertEqual(self.client.get('/api/manage/live/').status_code, 200)
+        self.assertEqual(self.client.delete(f'/api/manage/live/{sid}/').status_code, 204)

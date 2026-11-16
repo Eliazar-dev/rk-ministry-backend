@@ -20,8 +20,8 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from accounts.models import User
 from content.models import (
-    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, PastorProfile,
-    PrayerRequest, Sermon,
+    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, LiveStream,
+    PastorProfile, PrayerRequest, Sermon,
 )
 from shop import services
 from shop.models import Donation, Order, Payment, Product
@@ -75,6 +75,7 @@ def crud(model, full, light, search, order=None):
 
 
 HeroView = crud(HeroSlide, s.Hero, s.HeroList, ['title'])
+LiveView = crud(LiveStream, s.Live_, s.LiveList, ['title', 'description'])
 SermonView = crud(Sermon, s.Sermon_, s.SermonList, ['title', 'speaker', 'category'])
 LessonView = crud(Lesson, s.Lesson_, s.LessonList, ['title', 'quarter', 'teacher'])
 LessonView.detail_serializer_class = s.LessonWithPages

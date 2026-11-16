@@ -13,6 +13,7 @@ urlpatterns = [
     path('children/', views.article_list('children')),
     path('ebooks/', views.article_list('ebook')),
     path('gallery/', views.GalleryList.as_view()),
+    path('live/', views.LiveNow.as_view()),
     path('about/', views.AboutView.as_view()),
     path('prayer-requests/', views.PrayerCreate.as_view()),
     path('contact/', views.ContactCreate.as_view()),
