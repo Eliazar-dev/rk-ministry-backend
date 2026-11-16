@@ -56,10 +56,11 @@ class SermonSerializer(Gated):
 
 class LessonPageSerializer(serializers.ModelSerializer):
     url = serializers.CharField(source='image_src')
+    alt = serializers.CharField(source='alt_text')
 
     class Meta:
         model = LessonPage
-        fields = ('id', 'url', 'label', 'alt_text')
+        fields = ('id', 'url', 'label', 'alt')
 
 
 class LessonSerializer(Gated):
@@ -73,7 +74,7 @@ class LessonSerializer(Gated):
     dateRange = serializers.CharField(source='date_range')
     category = serializers.CharField(source='quarter')
     likes = serializers.SerializerMethodField()
-    pages = LessonPageSerializer(source='pages', many=True, read_only=True)
+    pages = LessonPageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Lesson
@@ -83,10 +84,9 @@ class LessonSerializer(Gated):
     def get_likes(self, obj):
         return like_count('lesson', obj.pk)
 
+    # Flags stay visible to visitors so lesson cards can show their buttons; only the content is gated.
     def get_hasPdf(self, obj):
-        request = self.context.get('request')
-        authed = bool(request and request.user and request.user.is_authenticated)
-        return authed and bool(obj.pdf_src)
+        return bool(obj.pdf_src)
 
     def get_hasPages(self, obj):
         return obj.pages.exists()

@@ -61,18 +61,21 @@ Pastor = make(PastorProfile)[0]
 
 
 class LessonPagePanel(PanelSerializer):
+    url = serializers.CharField(source='image_src', read_only=True)
+
     class Meta:
         model = LessonPage
-        fields = ('id', 'lesson', 'image', 'image_url', 'label', 'alt_text', 'order')
-        read_only_fields = ('lesson',)
+        fields = ('id', 'lesson', 'url', 'image_url', 'label', 'alt_text', 'order')
+        read_only_fields = ('lesson', 'url')
 
 
 # Override Lesson_ to include pages in detail view
-class LessonWithPages(Lesson_):
+class LessonWithPages(PanelSerializer):
     pages = LessonPagePanel(source='pages', many=True, read_only=True)
 
-    class Meta(Lesson_.Meta):
-        fields = Lesson_.Meta.fields + ('pages',)
+    class Meta:
+        model = Lesson
+        exclude = ('cover', 'pdf', 'poster', 'photo', 'image')
 
 
 class CommentSerializer(serializers.ModelSerializer):
