@@ -19,8 +19,8 @@ DEBUG = env('DEBUG', '0') == '1'
 SECRET_KEY = env('SECRET_KEY', 'dev-insecure-key-change-me')
 ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', '.vercel.app,localhost,127.0.0.1,testserver')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', 'https://*.vercel.app')
-FRONTEND_URL = env('FRONTEND_URL', 'https://richardkwanya-ministry-frontend.vercel.app')
-RESET_PASSWORD_URL = env('RESET_PASSWORD_URL', 'https://richardkwanya-ministry-frontend.vercel.app')
+FRONTEND_URL = env('FRONTEND_URL', 'https://www.richardkwanyasnr.org')
+RESET_PASSWORD_URL = env('RESET_PASSWORD_URL', 'https://www.richardkwanyasnr.org')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
