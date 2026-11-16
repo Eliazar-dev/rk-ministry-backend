@@ -95,7 +95,7 @@ class Lesson(Cover):
     teacher = models.CharField(max_length=120, default='Richard Kwanya Snr')
     pdf = CloudinaryField('lesson PDF (upload)', resource_type='raw', folder='rk/pdfs', blank=True, null=True)
     pdf_url = models.URLField('lesson PDF URL', blank=True, help_text='Optional: paste a PDF link (use this for files over 4 MB).')
-    youtube_url = models.URLField('YouTube lesson video link')
+    youtube_url = models.URLField('YouTube lesson video link', blank=True)
     description = models.TextField(blank=True)
     start_date = models.DateField(default=timezone.localdate, help_text='Used for ordering — newest first.')
 
