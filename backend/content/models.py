@@ -37,16 +37,6 @@ class Cover(Base):
             return self.cover_url or ''
 
 
-def video_poster(url):
-    """First frame of a Cloudinary video as a small JPEG (used as the poster while the video loads)."""
-    marker = '/video/upload/'
-    if marker not in url or not url.lower().endswith(('.mp4', '.mov', '.webm')):
-        return ''
-    head, tail = url.split(marker, 1)
-    tail = tail.rsplit('.', 1)[0] + '.jpg'
-    return f'{head}{marker}so_1,c_limit,w_1280,q_auto/{tail}'
-
-
 # ---------------- Home page video carousel ----------------
 class HeroSlide(Base):
     title = models.CharField(max_length=120, blank=True, help_text='Internal label only.')
@@ -65,7 +55,10 @@ class HeroSlide(Base):
 
     @property
     def poster_auto(self):
-        return self.poster_src or video_poster(self.video_url)
+        # Only an explicitly uploaded/pasted poster is used. Cloudinary video
+        # thumbnails need a transformation (so_0/...) which accounts with strict
+        # transformations reject; without a poster the <video> shows its first frame.
+        return self.poster_src or ''
 
     def __str__(self):
         return self.title or f'Slide {self.pk}'
