@@ -173,7 +173,9 @@ class ForgotPasswordView(Public):
         if user:
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            link = f'{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}'
+            # Use Vercel frontend URL for password reset to ensure links work
+            frontend_url = env('RESET_PASSWORD_URL', settings.FRONTEND_URL)
+            link = f'{frontend_url}/reset-password?uid={uid}&token={token}'
             send_mail(
                 'Reset your password',
                 f'Hello {user.display_name},\n\nUse this link to choose a new password (valid for 3 days):\n{link}\n\n'
