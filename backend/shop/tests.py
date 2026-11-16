@@ -37,7 +37,8 @@ class ApiFlowTests(TestCase):
             self.assertTrue(r.data[0]['locked'], url)
             for f in fields:
                 self.assertNotIn(f, r.data[0], f'{url} leaked {f}')
-        self.assertFalse(self.c.get('/api/lessons/').data[0]['hasPdf'])  # hasPdf is false for anonymous users
+        # availability flags stay visible to visitors so cards can render their buttons
+        self.assertTrue(self.c.get('/api/lessons/').data[0]['hasPdf'])
         for url in ['/api/hero/', '/api/products/', '/api/about/']:
             self.assertEqual(self.c.get(url).status_code, 200, url)
         self.signup()

@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.utils import timezone
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
@@ -70,7 +70,7 @@ class LiveNow(PublicMixin, APIView):
                        .order_by('scheduled_at', 'id')
                        .first())
         if not obj:
-            return Response(None)
+            return JsonResponse(None, safe=False)  # literal `null` — Response(None) renders an empty body
         return Response(s.LiveSerializer(obj, context={'request': request}).data)
 
 

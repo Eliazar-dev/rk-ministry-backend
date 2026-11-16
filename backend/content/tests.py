@@ -146,7 +146,7 @@ class LiveStreamTests(TestCase):
     def test_empty_returns_null(self):
         response = self.client.get('/api/live/')
         self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.data)
+        self.assertIsNone(response.json())  # literal JSON null, not an empty body
 
     def test_anonymous_gets_locked_no_youtube(self):
         self.make(is_live=True)
@@ -193,4 +193,4 @@ class LiveStreamTests(TestCase):
     def test_ended_live_stream_is_not_returned(self):
         self.make(is_live=True, ends_at=self.past)
         response = self.client.get('/api/live/')
-        self.assertIsNone(response.data)
+        self.assertIsNone(response.json())
