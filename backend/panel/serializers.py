@@ -72,11 +72,11 @@ class LessonPagePanel(PanelSerializer):
 
 # Override Lesson_ to include pages in detail view
 class LessonWithPages(PanelSerializer):
-    pages = LessonPagePanel(source='pages', many=True, read_only=True)
+    pages = LessonPagePanel(many=True, read_only=True)
 
     class Meta:
         model = Lesson
-        exclude = ('cover', 'pdf', 'poster', 'photo', 'image')
+        exclude = tuple(f for f in PAIRS if hasattr(Lesson, f))
 
 
 class CommentSerializer(serializers.ModelSerializer):
