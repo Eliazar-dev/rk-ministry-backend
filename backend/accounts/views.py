@@ -169,22 +169,26 @@ class ForgotPasswordView(Public):
     """Always answers 200 so the form cannot be used to discover which emails have accounts."""
 
     def post(self, request):
-        user = User.objects.filter(email__iexact=_email(request), is_active=True).first()
-        if user:
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            # Use Vercel frontend URL for password reset to ensure links work
-            frontend_url = env('RESET_PASSWORD_URL', settings.FRONTEND_URL)
-            link = f'{frontend_url}/reset-password?uid={uid}&token={token}'
-            send_mail(
-                'Reset your password',
-                f'Hello {user.display_name},\n\nUse this link to choose a new password (valid for 3 days):\n{link}\n\n'
-                'If you did not ask for this, you can ignore this email.\n\nRichard Kwanya Snr #Babawa\n',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=True,
-            )
-        return Response({'detail': 'If that email has an account, a reset link is on its way.'})
+        try:
+            user = User.objects.filter(email__iexact=_email(request), is_active=True).first()
+            if user:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                # Use Vercel frontend URL for password reset to ensure links work
+                frontend_url = env('RESET_PASSWORD_URL', settings.FRONTEND_URL)
+                link = f'{frontend_url}/reset-password?uid={uid}&token={token}'
+                send_mail(
+                    'Reset your password',
+                    f'Hello {user.display_name},\n\nUse this link to choose a new password (valid for 3 days):\n{link}\n\n'
+                    'If you did not ask for this, you can ignore this email.\n\nRichard Kwanya Snr #Babawa\n',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                )
+            return Response({'detail': 'If that email has an account, a reset link is on its way.'})
+        except Exception as e:
+            import traceback
+            return Response({'detail': f'Password reset error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
 
 
 class ResetPasswordView(Public):
