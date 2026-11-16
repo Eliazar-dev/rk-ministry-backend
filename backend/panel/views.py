@@ -20,7 +20,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from accounts.models import User
 from content.models import (
-    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, PastorProfile,
+    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, PastorProfile,
     PrayerRequest, Sermon,
 )
 from shop import services
@@ -56,10 +56,13 @@ class Panel:
 
 class PanelViewSet(Panel, ModelViewSet):
     list_serializer_class = None
+    detail_serializer_class = None
 
     def get_serializer_class(self):
         if self.action == 'list' and self.list_serializer_class:
             return self.list_serializer_class
+        if self.action in ('retrieve', 'update', 'partial_update') and self.detail_serializer_class:
+            return self.detail_serializer_class
         return self.serializer_class
 
 
@@ -74,9 +77,60 @@ def crud(model, full, light, search, order=None):
 HeroView = crud(HeroSlide, s.Hero, s.HeroList, ['title'])
 SermonView = crud(Sermon, s.Sermon_, s.SermonList, ['title', 'speaker', 'category'])
 LessonView = crud(Lesson, s.Lesson_, s.LessonList, ['title', 'quarter', 'teacher'])
+LessonView.detail_serializer_class = s.LessonWithPages
 DevotionalView = crud(Devotional, s.Devotional_, s.DevotionalList, ['title', 'author', 'scripture'])
 AlbumView = crud(Album, s.Album_, s.AlbumList, ['title', 'location'])
 ProductView = crud(Product, s.Product_, s.ProductList, ['name'])
+
+
+# ---------- lesson pages ----------
+class LessonPageView(Panel, ModelViewSet):
+    queryset = LessonPage.objects.all()
+    serializer_class = s.LessonPagePanel
+    search_fields = ['label', 'alt_text']
+    filter_backends = [QSearch]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        lesson_id = self.request.query_params.get('lesson')
+        return qs.filter(lesson_id=lesson_id) if lesson_id else qs
+
+    def perform_create(self, serializer):
+        lesson_id = self.request.data.get('lesson')
+        if lesson_id:
+            try:
+                lesson = Lesson.objects.get(pk=lesson_id)
+                serializer.save(lesson=lesson)
+            except Lesson.DoesNotExist:
+                serializer.save()
+        else:
+            serializer.save()
+
+    @action(detail=False, methods=['post'], url_path='reorder')
+    def reorder(self, request):
+        """Bulk reorder lesson pages. Accepts [{id, order}] and updates in one query."""
+        items = request.data
+        if not isinstance(items, list):
+            return Response({'detail': 'Expected an array of {id, order} objects'}, status=400)
+
+        for item in items:
+            page_id = item.get('id')
+            order = item.get('order')
+            if page_id is None or order is None:
+                return Response({'detail': 'Each item must have id and order'}, status=400)
+
+        # Bulk update
+        updated = []
+        for item in items:
+            try:
+                page = LessonPage.objects.get(pk=item['id'])
+                page.order = item['order']
+                page.save(update_fields=['order'])
+                updated.append(page.id)
+            except LessonPage.DoesNotExist:
+                continue
+
+        return Response({'updated': updated})
 
 
 class ArticleView(PanelViewSet):
@@ -309,7 +363,7 @@ class Stats(APIView):
 
 
 # ---------- direct-to-Cloudinary uploads ----------
-FOLDERS = {'covers', 'posters', 'pdfs', 'pastor', 'products', 'albums', 'videos'}
+FOLDERS = {'covers', 'posters', 'pdfs', 'pastor', 'products', 'albums', 'videos', 'lessons'}
 TYPES = {'image', 'video', 'raw'}
 
 

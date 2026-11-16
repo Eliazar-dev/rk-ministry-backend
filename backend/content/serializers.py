@@ -6,7 +6,7 @@ is removed on the server for anyone who is not signed in, and the item is flagge
 from rest_framework import serializers
 
 from .models import (
-    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, Like,
+    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, Like,
     PastorProfile, PrayerRequest, Sermon,
 )
 
@@ -54,20 +54,31 @@ class SermonSerializer(Gated):
         return like_count('sermon', obj.pk)
 
 
+class LessonPageSerializer(serializers.ModelSerializer):
+    url = serializers.CharField(source='image_src')
+
+    class Meta:
+        model = LessonPage
+        fields = ('id', 'url', 'label', 'alt_text')
+
+
 class LessonSerializer(Gated):
-    locked_fields = ('youtube', 'pdf')
+    locked_fields = ('youtube', 'pdf', 'pages')
     cover = serializers.CharField(source='cover_src')
     pdf = serializers.CharField(source='pdf_src')
     hasPdf = serializers.SerializerMethodField()
+    hasPages = serializers.SerializerMethodField()
+    hasVideo = serializers.SerializerMethodField()
     youtube = serializers.CharField(source='youtube_url')
     dateRange = serializers.CharField(source='date_range')
     category = serializers.CharField(source='quarter')
     likes = serializers.SerializerMethodField()
+    pages = LessonPageSerializer(source='pages', many=True, read_only=True)
 
     class Meta:
         model = Lesson
         fields = ('id', 'title', 'quarter', 'dateRange', 'category', 'teacher', 'cover', 'pdf', 'hasPdf',
-                  'youtube', 'likes', 'description')
+                  'hasPages', 'hasVideo', 'youtube', 'likes', 'description', 'pages')
 
     def get_likes(self, obj):
         return like_count('lesson', obj.pk)
@@ -76,6 +87,12 @@ class LessonSerializer(Gated):
         request = self.context.get('request')
         authed = bool(request and request.user and request.user.is_authenticated)
         return authed and bool(obj.pdf_src)
+
+    def get_hasPages(self, obj):
+        return obj.pages.exists()
+
+    def get_hasVideo(self, obj):
+        return bool(obj.youtube_url)
 
 
 class DevotionalSerializer(Gated):

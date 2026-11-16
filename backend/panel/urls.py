@@ -17,6 +17,7 @@ router.register('messages', v.MessageView, basename='panel-messages')
 router.register('orders', v.OrderView, basename='panel-orders')
 router.register('donations', v.DonationView, basename='panel-donations')
 router.register('members', v.MemberView, basename='panel-members')
+router.register('lesson-pages', v.LessonPageView, basename='panel-lesson-pages')
 
 urlpatterns = [
     path('stats/', v.Stats.as_view()),

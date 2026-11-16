@@ -34,7 +34,7 @@ class SermonList(PublicMixin, ListAPIView):
 
 class LessonList(PublicMixin, ListAPIView):
     serializer_class = s.LessonSerializer
-    queryset = Lesson.objects.filter(published=True)
+    queryset = Lesson.objects.filter(published=True).prefetch_related('pages')
 
 
 class DevotionalList(PublicMixin, ListAPIView):

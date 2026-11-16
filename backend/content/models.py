@@ -110,6 +110,30 @@ class Lesson(Cover):
         return f'{self.quarter} — {self.title}'
 
 
+class LessonPage(models.Model):
+    lesson = models.ForeignKey(Lesson, related_name='pages', on_delete=models.CASCADE)
+    image = CloudinaryField('lesson page image (upload)', folder='rk/lessons', blank=True, null=True)
+    image_url = models.URLField('lesson page image URL', blank=True, help_text='Optional: paste an image URL instead of uploading.')
+    label = models.CharField(max_length=60, blank=True, help_text='e.g. "Friday, Oct 23"')
+    alt_text = models.CharField(max_length=200, blank=True, help_text='Alt text for accessibility')
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = 'lesson page'
+        verbose_name_plural = 'lesson pages'
+
+    @property
+    def image_src(self):
+        try:
+            return media_url(self.image) or self.image_url
+        except Exception:
+            return self.image_url or ''
+
+    def __str__(self):
+        return f'{self.lesson.title} — {self.label or f"Page {self.order + 1}"}'
+
+
 # ---------------- Devotionals ----------------
 class Devotional(Cover):
     title = models.CharField(max_length=200)

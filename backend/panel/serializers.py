@@ -8,7 +8,7 @@ from rest_framework import serializers
 
 from accounts.models import User
 from content.models import (
-    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, PastorProfile,
+    Album, Article, Comment, ContactMessage, Devotional, HeroSlide, Lesson, LessonPage, PastorProfile,
     PrayerRequest, Sermon,
 )
 from shop.models import Donation, Order, OrderItem, Product
@@ -58,6 +58,21 @@ Article_, ArticleList = make(Article, light=('body',))
 Album_, AlbumList = make(Album)
 Product_, ProductList = make(Product, light=('description',))
 Pastor = make(PastorProfile)[0]
+
+
+class LessonPagePanel(PanelSerializer):
+    class Meta:
+        model = LessonPage
+        fields = ('id', 'lesson', 'image', 'image_url', 'label', 'alt_text', 'order')
+        read_only_fields = ('lesson',)
+
+
+# Override Lesson_ to include pages in detail view
+class LessonWithPages(Lesson_):
+    pages = LessonPagePanel(source='pages', many=True, read_only=True)
+
+    class Meta(Lesson_.Meta):
+        fields = Lesson_.Meta.fields + ('pages',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
