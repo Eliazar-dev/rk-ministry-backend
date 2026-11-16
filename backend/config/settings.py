@@ -19,8 +19,8 @@ DEBUG = env('DEBUG', '0') == '1'
 SECRET_KEY = env('SECRET_KEY', 'dev-insecure-key-change-me')
 ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', '.vercel.app,localhost,127.0.0.1,testserver')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', 'https://*.vercel.app')
-FRONTEND_URL = env('FRONTEND_URL', 'https://www.richardkwanyasnr.org')
-RESET_PASSWORD_URL = env('RESET_PASSWORD_URL', 'https://www.richardkwanyasnr.org')
+FRONTEND_URL = env('FRONTEND_URL', 'https://www.richardkwanyasnr.org').rstrip('/')
+RESET_PASSWORD_URL = env('RESET_PASSWORD_URL', FRONTEND_URL)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -136,4 +136,3 @@ MPESA_CALLBACK_URL = env('MPESA_CALLBACK_URL')  # https://<backend>.vercel.app/a
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 
 SITE_NAME = 'Richard Kwanya Snr Ministry'
-FRONTEND_URL = env('FRONTEND_URL', 'http://localhost:5173').rstrip('/')  # used in password-reset emails

@@ -189,9 +189,10 @@ class ForgotPasswordView(Public):
                     fail_silently=True,
                 )
             return Response({'detail': 'If that email has an account, a reset link is on its way.'})
-        except Exception as e:
-            import traceback
-            return Response({'detail': f'Password reset error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Password reset failed')
+            return Response({'detail': 'Something went wrong. Please try again.'}, status=500)
 
 
 class ResetPasswordView(Public):
