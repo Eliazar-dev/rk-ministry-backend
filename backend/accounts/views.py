@@ -1,3 +1,4 @@
+import os
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
@@ -175,7 +176,7 @@ class ForgotPasswordView(Public):
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
                 # Use Vercel frontend URL for password reset to ensure links work
-                frontend_url = env('RESET_PASSWORD_URL', settings.FRONTEND_URL)
+                frontend_url = os.environ.get('RESET_PASSWORD_URL', settings.FRONTEND_URL)
                 link = f'{frontend_url}/reset-password?uid={uid}&token={token}'
                 send_mail(
                     'Reset your password',
