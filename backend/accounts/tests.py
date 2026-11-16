@@ -70,7 +70,7 @@ class OtpSignupTests(TestCase):
         self.c.post('/api/auth/register/', SIGNUP, format='json')
         old = last_code()
         self.assertEqual(self.c.post('/api/auth/register/', SIGNUP, format='json').status_code, 429)
-        EmailOTP.objects.update(created=timezone.now() - timedelta(seconds=31))
+        EmailOTP.objects.update(created=timezone.now() - timedelta(seconds=61))
         self.assertEqual(self.c.post('/api/auth/register/', SIGNUP, format='json').status_code, 200)
         self.assertEqual(EmailOTP.objects.count(), 1)
         new = last_code()

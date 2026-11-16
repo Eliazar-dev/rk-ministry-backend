@@ -1,4 +1,4 @@
-"""Email one-time codes: issue, send, check. Codes live 10 minutes, 5 wrong tries, 30 s resend cooldown."""
+"""Email one-time codes: issue, send, check. Codes live 10 minutes, 5 wrong tries, 60 s resend cooldown."""
 import secrets
 from datetime import timedelta
 
@@ -10,7 +10,7 @@ from django.utils.crypto import constant_time_compare, salted_hmac
 from .models import EmailOTP
 
 TTL = timedelta(minutes=10)
-COOLDOWN = timedelta(seconds=30)
+COOLDOWN = timedelta(seconds=60)
 MAX_ATTEMPTS = 5
 
 
