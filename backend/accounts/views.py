@@ -173,6 +173,8 @@ class ForgotPasswordView(Public):
         try:
             user = User.objects.filter(email__iexact=_email(request), is_active=True).first()
             if user:
+                if not user.pk:
+                    return Response({'detail': 'Account error: user ID is missing'}, status=500)
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
                 # Use Vercel frontend URL for password reset to ensure links work
