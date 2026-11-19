@@ -152,6 +152,7 @@ class Article(Cover):
         ('medical', 'Medical Missionary'),
         ('children', 'Children Bible Story'),
         ('ebook', 'E-Book'),
+        ('youth', 'Youth Ministries'),
     ]
     section = models.CharField(max_length=20, choices=SECTIONS)
     title = models.CharField(max_length=200)
