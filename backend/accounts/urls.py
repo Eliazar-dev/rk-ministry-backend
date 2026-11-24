@@ -11,6 +11,7 @@ urlpatterns = [
     path('auth/otp/login/', views.LoginCodeVerifyView.as_view()),
     path('auth/google/', views.GoogleLoginView.as_view()),
     path('auth/refresh/', TokenRefreshView.as_view()),
+    path('auth/password/', views.SetPasswordView.as_view()),
     path('auth/forgot/', views.ForgotPasswordView.as_view()),
     path('auth/reset/', views.ResetPasswordView.as_view()),
     path('auth/me/', views.MeView.as_view()),

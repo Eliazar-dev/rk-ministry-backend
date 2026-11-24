@@ -49,6 +49,23 @@ class OtpSignupTests(TestCase):
         self.assertEqual(self.c.post('/api/auth/register/', weak, format='json').status_code, 400)
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_signup_without_password_uses_email_codes_only(self):
+        body = {'name': 'No Pass', 'email': 'nopass@x.com'}  # no password at all
+        r = self.c.post('/api/auth/register/', body, format='json')
+        self.assertEqual((r.status_code, r.data['pending']), (200, True))
+        ok = self.c.post('/api/auth/verify/', {'email': 'nopass@x.com', 'code': last_code()}, format='json')
+        self.assertEqual(ok.status_code, 201)
+        self.assertFalse(ok.data['user']['has_password'])
+        user = User.objects.get(email='nopass@x.com')
+        self.assertFalse(user.has_usable_password())
+        # password login cannot work for them; the emailed code still can
+        self.assertEqual(self.c.post('/api/auth/login/', {'email': 'nopass@x.com', 'password': 'x'}, format='json').status_code, 401)
+
+    def test_weak_password_still_rejected_when_given(self):
+        weak = {'name': 'N', 'email': 'w@x.com', 'password': '123'}
+        self.assertEqual(self.c.post('/api/auth/register/', weak, format='json').status_code, 400)
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_lockout_after_five_wrong_guesses(self):
         self.c.post('/api/auth/register/', SIGNUP, format='json')
         good = last_code()
@@ -106,6 +123,34 @@ class OtpLoginTests(TestCase):
         self.assertEqual(r.status_code, 400)
 
 
+class SetPasswordTests(TestCase):
+    def setUp(self):
+        self.c = APIClient()
+        self.user = User.objects.create_user(email='jane@x.com', password='secret123', first_name='Jane')
+        self.c.force_authenticate(self.user)
+
+    def test_otp_only_user_sets_a_password(self):
+        self.user.set_unusable_password()
+        self.user.save()
+        r = self.c.post('/api/auth/password/', {'password': 'newpass123'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpass123'))
+
+    def test_user_with_password_must_confirm_current(self):
+        r = self.c.post('/api/auth/password/', {'password': 'newpass123'}, format='json')
+        self.assertEqual(r.status_code, 400)  # no current_password sent
+        r = self.c.post('/api/auth/password/', {'password': 'newpass123', 'current_password': 'wrong'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        r = self.c.post('/api/auth/password/', {'password': 'newpass123', 'current_password': 'secret123'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(self.user.check_password('newpass123') or User.objects.get(pk=self.user.pk).check_password('newpass123'))
+
+    def test_requires_login(self):
+        self.c.force_authenticate(None)
+        self.assertIn(self.c.post('/api/auth/password/', {'password': 'x1234567'}, format='json').status_code, (401, 403))
+
+
 @override_settings(GOOGLE_CLIENT_ID='test-client-id')
 class GoogleTests(TestCase):
     def setUp(self):
@@ -117,7 +162,7 @@ class GoogleTests(TestCase):
         first = self.c.post('/api/auth/google/', {'credential': 'tok'}, format='json')
         self.assertEqual(first.status_code, 200)
         self.assertTrue(first.data['created'])
-        self.assertEqual(first.data['user'], {'id': first.data['user']['id'], 'name': 'Grace Wanjiru', 'email': 'grace@gmail.com', 'is_staff': False, 'profile_picture': ''})
+        self.assertEqual(first.data['user'], {'id': first.data['user']['id'], 'name': 'Grace Wanjiru', 'email': 'grace@gmail.com', 'is_staff': False, 'has_password': False, 'profile_picture': ''})
         self.assertFalse(User.objects.get().has_usable_password())
         second = self.c.post('/api/auth/google/', {'credential': 'tok'}, format='json')
         self.assertFalse(second.data['created'])
