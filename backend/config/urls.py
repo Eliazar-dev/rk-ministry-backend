@@ -17,4 +17,5 @@ urlpatterns = [
     path('api/', include('content.urls')),
     path('api/', include('shop.urls')),
     path('api/', include('newsletter.urls')),
+    path('api/test/', lambda request: __import__('django.http', fromlist=['JsonResponse']).JsonResponse({'newsletter_loaded': 'newsletter' in __import__('django.apps', fromlist=['apps']).apps.app_configs}), name='test'),
 ]
