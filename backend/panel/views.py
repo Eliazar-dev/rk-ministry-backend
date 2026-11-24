@@ -232,10 +232,10 @@ class MemberView(Panel, ModelViewSet):
 
 
 class NewsletterSubscriberView(Panel, ModelViewSet):
-    queryset = NewsletterSubscriber.objects.all().order_by('-subscribed_at')
+    queryset = NewsletterSubscriber.objects.filter(active=True).order_by('-subscribed_at')
     serializer_class = s.NewsletterSubscriberSerializer
     search_fields = ['email', 'name']
-    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
+    http_method_names = ['get', 'delete', 'head', 'options']  # only list and delete, no edit
 
 
 # ---------- single records ----------
