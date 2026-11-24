@@ -5,5 +5,5 @@ class NewsletterConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'newsletter'
 
-    def ready(self):
-        import newsletter.signals
+    # def ready(self):
+    #     import newsletter.signals
