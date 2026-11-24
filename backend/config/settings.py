@@ -134,6 +134,8 @@ MPESA_PASSKEY = env('MPESA_PASSKEY')
 MPESA_CALLBACK_URL = env('MPESA_CALLBACK_URL')  # https://<backend>.vercel.app/api/mpesa/callback/
 # PayBill shortcode -> CustomerPayBillOnline ; Buy Goods (Till) -> CustomerBuyGoodsOnline
 MPESA_TRANSACTION_TYPE = env('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline')
+# For Buy Goods/Till: PartyB is the actual Till number (different from BusinessShortCode)
+MPESA_TILL_NUMBER = env('MPESA_TILL_NUMBER', '')
 
 # ---- Google sign-in (OAuth Web client ID from Google Cloud Console) ----
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')

@@ -10,7 +10,11 @@ from django.conf import settings
 
 def configured():
     s = settings
-    return all([s.MPESA_CONSUMER_KEY, s.MPESA_CONSUMER_SECRET, s.MPESA_PASSKEY, s.MPESA_CALLBACK_URL])
+    base_ok = all([s.MPESA_CONSUMER_KEY, s.MPESA_CONSUMER_SECRET, s.MPESA_PASSKEY, s.MPESA_CALLBACK_URL])
+    # For Buy Goods/Till, also require the till number
+    if getattr(s, 'MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline') == 'CustomerBuyGoodsOnline':
+        return base_ok and bool(getattr(s, 'MPESA_TILL_NUMBER', ''))
+    return base_ok
 
 
 def normalize_phone(raw):
@@ -44,6 +48,10 @@ def _token():
 def _stk_request(phone, amount, reference, description, transaction_type):
     ts = datetime.now().strftime('%Y%m%d%H%M%S')
     password = base64.b64encode(f'{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{ts}'.encode()).decode()
+
+    # For Buy Goods/Till, PartyB is the actual Till number (different from BusinessShortCode)
+    party_b = settings.MPESA_TILL_NUMBER if transaction_type == 'CustomerBuyGoodsOnline' and settings.MPESA_TILL_NUMBER else settings.MPESA_SHORTCODE
+
     payload = {
         'BusinessShortCode': settings.MPESA_SHORTCODE,
         'Password': password,
@@ -51,7 +59,7 @@ def _stk_request(phone, amount, reference, description, transaction_type):
         'TransactionType': transaction_type,
         'Amount': int(amount),
         'PartyA': phone,
-        'PartyB': settings.MPESA_SHORTCODE,
+        'PartyB': party_b,
         'PhoneNumber': phone,
         'CallBackURL': settings.MPESA_CALLBACK_URL,
         'AccountReference': reference[:12],
@@ -82,6 +90,9 @@ def stk_push(phone, amount, reference, description):
         # Daraja rejects a mismatched shortcode type with "unresolved reason type" —
         # a rejected push never reaches the phone, so retrying with the other type is safe.
         if 'unresolved reason' in (err or '').lower() or 'invalid transaction' in (err or '').lower():
+            # For Buy Goods fallback, ensure till number is set
+            if alternate == 'CustomerBuyGoodsOnline' and not getattr(settings, 'MPESA_TILL_NUMBER', ''):
+                return '', 'Till number not configured for Buy Goods transaction'
             cid, err = _stk_request(phone, amount, reference, description, alternate)
             if cid:
                 return cid, None
