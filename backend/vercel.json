@@ -8,6 +8,6 @@
   ],
   "routes": [{ "src": "/(.*)", "dest": "/" }],
   "installCommand": "pip install -r requirements.txt",
-  "buildCommand": "python manage.py migrate --run-syncdb && python manage.py migrate",
+  "buildCommand": "python manage.py migrate newsletter && python manage.py migrate",
   "version": 2
 }
