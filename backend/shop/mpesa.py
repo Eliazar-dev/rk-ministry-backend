@@ -52,7 +52,7 @@ def stk_push(phone, amount, reference, description):
             'BusinessShortCode': settings.MPESA_SHORTCODE,
             'Password': password,
             'Timestamp': ts,
-            'TransactionType': 'CustomerPayBillOnline',
+            'TransactionType': getattr(settings, 'MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
             'Amount': int(amount),
             'PartyA': phone,
             'PartyB': settings.MPESA_SHORTCODE,
