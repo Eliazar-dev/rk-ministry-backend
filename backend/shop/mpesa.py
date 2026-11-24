@@ -41,35 +41,50 @@ def _token():
     return r.json()['access_token']
 
 
+def _stk_request(phone, amount, reference, description, transaction_type):
+    ts = datetime.now().strftime('%Y%m%d%H%M%S')
+    password = base64.b64encode(f'{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{ts}'.encode()).decode()
+    payload = {
+        'BusinessShortCode': settings.MPESA_SHORTCODE,
+        'Password': password,
+        'Timestamp': ts,
+        'TransactionType': transaction_type,
+        'Amount': int(amount),
+        'PartyA': phone,
+        'PartyB': settings.MPESA_SHORTCODE,
+        'PhoneNumber': phone,
+        'CallBackURL': settings.MPESA_CALLBACK_URL,
+        'AccountReference': reference[:12],
+        'TransactionDesc': description[:13],
+    }
+    r = requests.post(
+        f'{_base()}/mpesa/stkpush/v1/processrequest',
+        json=payload,
+        headers={'Authorization': f'Bearer {_token()}'},
+        timeout=8,
+    )
+    data = r.json()
+    if data.get('ResponseCode') == '0':
+        return data['CheckoutRequestID'], None
+    return '', data.get('errorMessage') or data.get('ResponseDescription') or 'M-Pesa request failed.'
+
+
 def stk_push(phone, amount, reference, description):
     """Returns (checkout_request_id, error). In simulate mode the id starts with SIM-."""
     if not configured():
         return 'SIM-' + uuid.uuid4().hex[:12], None
     try:
-        ts = datetime.now().strftime('%Y%m%d%H%M%S')
-        password = base64.b64encode(f'{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{ts}'.encode()).decode()
-        payload = {
-            'BusinessShortCode': settings.MPESA_SHORTCODE,
-            'Password': password,
-            'Timestamp': ts,
-            'TransactionType': getattr(settings, 'MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
-            'Amount': int(amount),
-            'PartyA': phone,
-            'PartyB': settings.MPESA_SHORTCODE,
-            'PhoneNumber': phone,
-            'CallBackURL': settings.MPESA_CALLBACK_URL,
-            'AccountReference': reference[:12],
-            'TransactionDesc': description[:13],
-        }
-        r = requests.post(
-            f'{_base()}/mpesa/stkpush/v1/processrequest',
-            json=payload,
-            headers={'Authorization': f'Bearer {_token()}'},
-            timeout=8,
-        )
-        data = r.json()
-        if data.get('ResponseCode') == '0':
-            return data['CheckoutRequestID'], None
-        return '', data.get('errorMessage') or data.get('ResponseDescription') or 'M-Pesa request failed.'
+        primary = getattr(settings, 'MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline')
+        alternate = 'CustomerBuyGoodsOnline' if primary == 'CustomerPayBillOnline' else 'CustomerPayBillOnline'
+        cid, err = _stk_request(phone, amount, reference, description, primary)
+        if cid:
+            return cid, None
+        # Daraja rejects a mismatched shortcode type with "unresolved reason type" —
+        # a rejected push never reaches the phone, so retrying with the other type is safe.
+        if 'unresolved reason' in (err or '').lower() or 'invalid transaction' in (err or '').lower():
+            cid, err = _stk_request(phone, amount, reference, description, alternate)
+            if cid:
+                return cid, None
+        return '', err
     except Exception as exc:  # network / auth problems
         return '', f'Could not reach M-Pesa: {exc}'
