@@ -17,21 +17,25 @@ class NewsletterSubscribe(APIView):
         if not email:
             return Response({'detail': 'Email is required.'}, status=400)
 
-        sub, created = NewsletterSubscriber.objects.get_or_create(
-            email=email,
-            defaults={'name': name, 'active': True}
-        )
+        try:
+            sub, created = NewsletterSubscriber.objects.get_or_create(
+                email=email,
+                defaults={'name': name, 'active': True}
+            )
 
-        if not sub.active:
-            sub.active = True
-            sub.unsubscribed_at = None
-            sub.save()
+            if not sub.active:
+                sub.active = True
+                sub.unsubscribed_at = None
+                sub.save()
 
-        if created or not sub.active:
-            self.send_welcome_email(sub)
+            if created or not sub.active:
+                self.send_welcome_email(sub)
 
-        serializer = NewsletterSubscriberSerializer(sub)
-        return Response(serializer.data, status=201 if created else 200)
+            serializer = NewsletterSubscriberSerializer(sub)
+            return Response(serializer.data, status=201 if created else 200)
+        except Exception as e:
+            import traceback
+            return Response({'detail': f'Subscribe error: {str(e)}', 'traceback': traceback.format_exc()}, status=500)
 
     def send_welcome_email(self, subscriber):
         try:
