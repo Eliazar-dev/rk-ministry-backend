@@ -16,4 +16,5 @@ urlpatterns = [
     path('api/', include('accounts.urls')),
     path('api/', include('content.urls')),
     path('api/', include('shop.urls')),
+    path('api/', include('newsletter.urls')),
 ]

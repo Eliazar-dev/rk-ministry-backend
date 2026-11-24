@@ -18,6 +18,7 @@ router.register('messages', v.MessageView, basename='panel-messages')
 router.register('orders', v.OrderView, basename='panel-orders')
 router.register('donations', v.DonationView, basename='panel-donations')
 router.register('members', v.MemberView, basename='panel-members')
+router.register('newsletter-subscribers', v.NewsletterSubscriberView, basename='panel-newsletter-subscribers')
 router.register('lesson-pages', v.LessonPageView, basename='panel-lesson-pages')
 
 urlpatterns = [

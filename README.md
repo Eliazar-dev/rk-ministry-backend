@@ -1,3 +1,4 @@
+
 # Richard Kwanya Snr Ministry — Website
 
 - `frontend/` React (Vite) · `backend/` Django REST API + admin. Both deploy to Vercel.

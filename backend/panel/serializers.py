@@ -12,6 +12,7 @@ from content.models import (
     PastorProfile, PrayerRequest, Sermon,
 )
 from shop.models import Donation, Order, OrderItem, Product
+from newsletter.models import NewsletterSubscriber
 
 # upload field -> url field
 PAIRS = {'cover': 'cover_url', 'pdf': 'pdf_url', 'poster': 'poster_url', 'photo': 'photo_url', 'image': 'image_url'}
@@ -141,3 +142,10 @@ class MemberSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'name', 'email', 'is_staff', 'is_active', 'date_joined', 'last_login')
         read_only_fields = ('name', 'email', 'date_joined', 'last_login')
+
+
+class NewsletterSubscriberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsletterSubscriber
+        fields = ('id', 'email', 'name', 'active', 'subscribed_at', 'unsubscribed_at')
+        read_only_fields = ('subscribed_at', 'unsubscribed_at')

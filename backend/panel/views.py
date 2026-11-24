@@ -25,6 +25,7 @@ from content.models import (
 )
 from shop import services
 from shop.models import Donation, Order, Payment, Product
+from newsletter.models import NewsletterSubscriber
 
 from . import serializers as s
 from .permissions import IsStaff
@@ -228,6 +229,13 @@ class MemberView(Panel, ModelViewSet):
     serializer_class = s.MemberSerializer
     search_fields = ['first_name', 'email']
     http_method_names = ['get', 'patch', 'head', 'options']  # can switch a member on/off, never delete
+
+
+class NewsletterSubscriberView(Panel, ModelViewSet):
+    queryset = NewsletterSubscriber.objects.all().order_by('-subscribed_at')
+    serializer_class = s.NewsletterSubscriberSerializer
+    search_fields = ['email', 'name']
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
 
 # ---------- single records ----------
