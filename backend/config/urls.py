@@ -17,5 +17,4 @@ urlpatterns = [
     path('api/', include('content.urls')),
     path('api/', include('shop.urls')),
     path('api/newsletter/', include('newsletter.urls')),
-    path('api/run-migration/', lambda request: __import__('django.core.management', fromlist=['call_command']).call_command('migrate', 'newsletter', verbosity=0) or __import__('django.http', fromlist=['JsonResponse']).JsonResponse({'status': 'migration run'}), name='run-migration'),
 ]
