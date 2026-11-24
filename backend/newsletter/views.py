@@ -2,7 +2,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import NewsletterSubscriber
 from .serializers import NewsletterSubscriberSerializer
 
@@ -71,3 +71,13 @@ class NewsletterList(APIView):
         subs = NewsletterSubscriber.objects.filter(active=True)
         serializer = NewsletterSubscriberSerializer(subs, many=True)
         return Response(serializer.data)
+
+
+class NewsletterMe(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sub = NewsletterSubscriber.objects.filter(email=request.user.email).first()
+        if sub:
+            return Response({'subscribed': sub.active, 'name': sub.name})
+        return Response({'subscribed': False, 'name': None})

@@ -1,5 +1,8 @@
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 from .models import NewsletterSubscriber
+
+User = get_user_model()
 
 
 class NewsletterTests(TestCase):
@@ -31,3 +34,24 @@ class NewsletterTests(TestCase):
     def test_subscribe_missing_email(self):
         resp = self.client.post('/api/newsletter/subscribe/', {'name': 'Test'})
         self.assertEqual(resp.status_code, 400)
+
+    def test_me_subscribed(self):
+        user = User.objects.create_user(email='test@example.com', first_name='Test')
+        NewsletterSubscriber.objects.create(email='test@example.com', name='Test User', active=True)
+        self.client.force_authenticate(user=user)
+        resp = self.client.get('/api/newsletter/me/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['subscribed'], True)
+        self.assertEqual(resp.json()['name'], 'Test User')
+
+    def test_me_not_subscribed(self):
+        user = User.objects.create_user(email='test@example.com', first_name='Test')
+        self.client.force_authenticate(user=user)
+        resp = self.client.get('/api/newsletter/me/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['subscribed'], False)
+        self.assertIsNone(resp.json()['name'])
+
+    def test_me_unauthenticated(self):
+        resp = self.client.get('/api/newsletter/me/')
+        self.assertEqual(resp.status_code, 401)
