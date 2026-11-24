@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'shop',
     'monitoring',
     'panel',
-    'newsletter',
+    'newsletter',  # newsletter subscription system
 ]
 
 MIDDLEWARE = [
